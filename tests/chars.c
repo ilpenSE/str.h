@@ -4,8 +4,8 @@
 
 void print_str(const string* s) {
   pprint("data: \"%s\"", s->data);
-  pprint("count: %zu", s->count);
-  pprint("capacity: %zu", s->capacity);
+  pprint("count: %zu", s->len);
+  pprint("capacity: %zu", s->cap);
   printf("==================\n");
 }
 

@@ -2,6 +2,7 @@
 #define STR_H
 
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdbool.h>
 
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -16,20 +17,20 @@
 
 typedef struct {
   char* data;
-  size_t count; // does not include \0
-  size_t capacity;
+  size_t len; // does not include \0
+  size_t cap;
 } string;
 
 // assumes xs as NON-NULL pointer (you have to check)
 #define da_append(xs, x) do {                                           \
-    size_t new_cap = (xs)->capacity;                                    \
-    if ((xs)->count >= new_cap) {                                       \
+    size_t new_cap = (xs)->cap;                                         \
+    if ((xs)->len >= new_cap) {                                         \
       new_cap = new_cap == 0 ? 64 : new_cap * 2;                        \
       (xs)->data = realloc((xs)->data, new_cap * sizeof(*(xs)->data));  \
     }                                                                   \
     if ((xs)->data) {                                                   \
-      (xs)->data[(xs)->count++] = x;                                    \
-      (xs)->capacity = new_cap;                                         \
+      (xs)->data[(xs)->len++] = x;                                      \
+      (xs)->cap = new_cap;                                              \
     }                                                                   \
   } while (0)
 
@@ -128,6 +129,12 @@ STR_API bool str_is_closed(const string* s);
 STR_API void str_repeat(string* s, size_t count);
 
 /*
+  Formats the string with given format string and variadics
+  Acts like running a temporary snprintf and applying it to string
+*/
+STR_API void str_format_into(string* s, const char* fmt, ...);
+
+/*
   Makes all alpha characters in that string lowercased
  */
 STR_API void str_tolower(string* s);
@@ -168,14 +175,14 @@ string str_newn(const char* buf, size_t len) {
   string r = {0};
   if (!buf) return r;
 
-  r.capacity = len + 1 + 16; // this 16 is for pre-allocation
-  r.data = (char*)malloc(r.capacity);
+  r.cap = len + 1 + 16; // this 16 is for pre-allocation
+  r.data = (char*)malloc(r.cap);
   if (!r.data) return r;
 
   memcpy(r.data, buf, len);
-  r.count = len;
+  r.len = len;
   
-  r.data[r.count] = '\0';
+  r.data[r.len] = '\0';
   return r;
 }
 
@@ -187,27 +194,27 @@ void str_free(string* s) {
   if (!s || !s->data) return;
   free(s->data);
   s->data = NULL;
-  s->count = 0;
-  s->capacity = 0;
+  s->len = 0;
+  s->cap = 0;
 }
 
 void str_clear(string *s) {
-  s->count = 0;
+  s->len = 0;
   if (s && s->data && s->data[0] != '\0') {
     s->data[0] = '\0';
   }
 }
 
 void str_clear_whole(string *s) {
-  if (!s || !s->data || s->count == 0) {
-    memset(s->data, 0, s->count);
+  if (!s || !s->data || s->len == 0) {
+    memset(s->data, 0, s->len);
   }
-  s->count = 0;
+  s->len = 0;
 }
 
 char str_get(const string* s, size_t pos) {
   if (!s || !s->data) return '\0';
-  if (pos >= s->count) return '\0';
+  if (pos >= s->len) return '\0';
   return s->data[pos];
 }
 
@@ -225,74 +232,74 @@ bool str_append_many(string* s, char* buf) {
 
 bool str_cat(string* s, const string* c) {
   if (!s || !c) return false;
-  size_t sum = s->count + c->count;
-  if (sum >= s->capacity) {
+  size_t sum = s->len + c->len;
+  if (sum >= s->cap) {
     // we dont have enough capacity
-    size_t new_cap = s->capacity == 0 ? 16 : s->capacity;
+    size_t new_cap = s->cap == 0 ? 16 : s->cap;
     while (sum >= new_cap)
       new_cap *= 2;
-    s->capacity = new_cap;
+    s->cap = new_cap;
     char* tmp = realloc(s->data, new_cap * sizeof(*s->data));
     if (!tmp) return false;
     else s->data = tmp;
   }
-  memcpy(s->data + s->count, c->data, c->count);
-  s->count = sum;
-  s->data[s->count] = '\0';
+  memcpy(s->data + s->len, c->data, c->len);
+  s->len = sum;
+  s->data[s->len] = '\0';
   return true;
 }
 
 void str_trim(string* s) {
-  if (!s || !s->data || s->count == 0) return;
+  if (!s || !s->data || s->len == 0) return;
 
   // nuke the whitespaces at the end
-  while (s->count > 0 && isspace((unsigned char)s->data[s->count - 1])) {
-    s->count -= 1;
+  while (s->len > 0 && isspace((unsigned char)s->data[s->len - 1])) {
+    s->len -= 1;
   }
-  s->data[s->count] = '\0';
+  s->data[s->len] = '\0';
   
   // count how many spaces at the begin
   size_t start = 0;
-  while (start < s->count && isspace((unsigned char)s->data[start])) {
+  while (start < s->len && isspace((unsigned char)s->data[start])) {
     start += 1;
   }
 
   // move string by "start" characters
   if (start > 0) {
-    memmove(s->data, s->data + start, s->count - start + 1);
-    s->count -= start;
+    memmove(s->data, s->data + start, s->len - start + 1);
+    s->len -= start;
   }
 }
 
 void str_repeat(string* s, size_t multiplier) {
 	if (multiplier == 1) return;
 	if (multiplier == 0) return;
-	size_t new_cnt = s->count * multiplier;
-  if (new_cnt >= s->capacity) {
+	size_t new_cnt = s->len * multiplier;
+  if (new_cnt >= s->cap) {
     // we dont have enough capacity
-    size_t new_cap = s->capacity == 0 ? 16 : s->capacity;
+    size_t new_cap = s->cap == 0 ? 16 : s->cap;
 		
     while (new_cnt >= new_cap)
       new_cap *= 2;
 		
-    s->capacity = new_cap;
+    s->cap = new_cap;
     char* tmp = realloc(s->data, new_cap * sizeof(*s->data));
     if (!tmp) return;
     else s->data = tmp;
   }
 
 	for (size_t i = 1; i < multiplier; ++i) {
-		memcpy(s->data + (i * s->count), s->data, s->count);
+		memcpy(s->data + (i * s->len), s->data, s->len);
 	}
 	
 	s->data[new_cnt] = '\0';
-  s->count = new_cnt;
+  s->len = new_cnt;
 }
 
 void str_tolower(string* s) {
-  if (!s || !s->data || s->count == 0) return;
+  if (!s || !s->data || s->len == 0) return;
   // go char-by char and apply tolower from ctype.h
-  for (size_t i = 0; i < s->count; ++i) {
+  for (size_t i = 0; i < s->len; ++i) {
     s->data[i] = (char)tolower((unsigned char)s->data[i]);
   }
 }
@@ -300,14 +307,14 @@ void str_tolower(string* s) {
 void str_toupper(string* s) {
   if (!s || !s->data) return;
   // go char-by char and apply toupper from ctype.h
-  for (size_t i = 0; i < s->count; ++i) {
+  for (size_t i = 0; i < s->len; ++i) {
     s->data[i] = (char)toupper((unsigned char)s->data[i]);
   }
 }
 
 void str_capitalize(string* s) {
   if (!s || !s->data) return;
-  for (size_t i = 0; i < s->count; ++i) {
+  for (size_t i = 0; i < s->len; ++i) {
     if (i == 0) {
       s->data[i] = (char)toupper((unsigned char)s->data[i]);
     } else {
@@ -316,9 +323,37 @@ void str_capitalize(string* s) {
   }
 }
 
+void str_format_into(string* s, const char* fmt, ...) {
+  if (!s) return;
+  if (!s->data || s->cap == 0) {
+    s->len = 0;
+    return;
+  }
+  
+  va_list ap;
+  va_start(ap, fmt);
+  int n = vsnprintf(s->data, s->cap, fmt, ap);
+  va_end(ap);
+
+  if (n < 0) {
+    s->len = 0;
+  } else if ((size_t)n >= s->cap) {
+    size_t cap = s->cap;
+    if (cap >= 2) {
+      s->data[cap - 2] = '\n';
+      s->data[cap - 1] = '\0';
+      s->len = cap - 1;
+    } else {
+      s->len = 0;
+    }
+  } else {
+    s->len = (size_t)n;
+  }
+}
+
 bool str_isalpha(const string* s) {
   if (!s || !s->data) return false;
-  for (size_t i = 0; i < s->count; ++i) {
+  for (size_t i = 0; i < s->len; ++i) {
     if (!isalpha((unsigned char)s->data[i])) return false;
   }
   return true;
@@ -326,7 +361,7 @@ bool str_isalpha(const string* s) {
 
 bool str_isalphanum(const string* s) {
   if (!s || !s->data) return false;
-  for (size_t i = 0; i < s->count; ++i) {
+  for (size_t i = 0; i < s->len; ++i) {
     bool a = isalpha((unsigned char)s->data[i]);
     bool n = s->data[i] >= '0' && s->data[i] <= '9';
     if (!n && !a) return false;
@@ -336,11 +371,11 @@ bool str_isalphanum(const string* s) {
 
 void str_close(string* s) {
   if (!s || !s->data) return;
-  s->data[s->count] = '\0';
+  s->data[s->len] = '\0';
 }
 
 bool str_is_closed(const string* s) {
-	return s->data[s->count] == '\0' ? true : false;
+	return s->data[s->len] == '\0' ? true : false;
 }
 
 char* str_to_cstr(const string* s) {
