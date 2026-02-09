@@ -1,4 +1,4 @@
-CC = gcc
+CC = x86_64-w64-mingw32-gcc
 CFLAGS = -x c -DSTR_IMPLEMENTATION -fPIC -shared
 debug ?= 0
 
@@ -10,7 +10,7 @@ endif
 
 STR_H = str.h
 BUILDF = build
-TARGET = $(BUILDF)/libstr.so
+TARGET = $(BUILDF)/libstr.dll
 
 all: $(TARGET)
 

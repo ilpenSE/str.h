@@ -3,16 +3,18 @@
 
 #include <stddef.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-  #ifdef STR_BUILD
-    #define STR_API __declspec(dllexport)
-  #else
-    #define STR_API __declspec(dllimport)
-  #endif
-#else
-  #define STR_API __attribute__((visibility("hidden")))
+// winslop shit
+#ifdef _WIN32
+#define STR_API __declspec(dllexport)
+#else // unix:
+#define STR_API __attribute__((visibility("default")))
 #endif
 
 typedef struct {
@@ -50,6 +52,13 @@ STR_API string str_newn(const char* buf, size_t len);
 STR_API string str_new(const char* buf);
 
 /*
+  Reservers needed memory for the string
+  It usually multiplies it by 2 if string is too long
+  Extra is additional bytes to append
+ */
+STR_API bool str_reserve(string* s, size_t extra);
+
+/*
   Returns char in that string by a pos value
   pos stands for position (the index, starts from zero)
  */
@@ -62,18 +71,22 @@ STR_API char str_idx(const string* s, size_t pos);
 STR_API bool str_append(string* s, char c);
 
 /*
-  str_append's "many" version, it accepts array of chars (C-string)
-  and in a while loop, it calls da_append like str_append
-  It manipulates buf (increments the pointer)
+  Str_cat but with C-type strings (char*)
+  "bufsz" is length of buf.
 */
-STR_API bool str_append_many(string* s, char* buf);
+STR_API bool str_catn(string* s, const char* buf, size_t bufsz);
+
+/*
+  Wrapper of str_append_manyn, calls strlen on buf
+ */
+STR_API bool str_cat(string* s, const char* buf);
 
 /*
   It concatenates dest string and src string
   It puts src string's chars into dest string and
   puts \0 at the end and updates count and capacity (if needed)
  */
-STR_API bool str_cat(string* dest, const string* src);
+STR_API bool str_cat_str(string* dest, const string* src);
 
 /*
   It gets "data" field in that string
@@ -96,13 +109,6 @@ STR_API void str_free(string* s);
   Capacity still there and this function DOES NOT FREE THE MEMORY!
  */
 STR_API void str_clear(string* s);
-
-/*
-  Zeroes whole string buffer
-  Uses memset, it is way slower than str_clear
-  Use str_clear if you dont have any special use-case
- */
-STR_API void str_clear_whole(string* s);
 
 /*
   Nukes whitespaces at the end and begin
@@ -135,22 +141,22 @@ STR_API void str_repeat(string* s, size_t count);
 STR_API void str_format_into(string* s, const char* fmt, ...);
 
 /*
-  Makes all alpha characters in that string lowercased
+  Makes all alpha characters in that string lowercased - ASCII only
  */
 STR_API void str_tolower(string* s);
 
 /*
-  Makes all alpha characters in that string uppercased
+  Makes all alpha characters in that string uppercased - ASCII only
 */
 STR_API void str_toupper(string* s);
 
 /*
-  Checks if all of chars in that string is alpha (uses UTF-8)
+  Checks if all of chars in that string is alpha - ASCII only
  */
 STR_API bool str_isalpha(const string* s);
 
 /*
-  Checks if all chars in string is alphanumeric (UTF-8 chars and numbers)
+  Checks if all chars in string is alphanumeric - ASCII only
  */
 STR_API bool str_isalphanum(const string* s);
 
@@ -165,25 +171,20 @@ STR_API bool str_isalphanum(const string* s);
  */
 STR_API void str_capitalize(string* s);
 
-#ifdef STR_IMPLEMENTATION
-
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
 string str_newn(const char* buf, size_t len) {
-  string r = {0};
-  if (!buf) return r;
+  string s = {0};
+  if (!buf) return s;
 
-  r.cap = len + 1 + 16; // this 16 is for pre-allocation
-  r.data = (char*)malloc(r.cap);
-  if (!r.data) return r;
+  size_t cap = len + 1 + 16; // this 16 is for pre-allocation
+  char* tmp = (char*)malloc(cap);
+  if (!tmp) return s;
+  s.data = tmp;
+  s.cap = cap;
 
-  memcpy(r.data, buf, len);
-  r.len = len;
-  
-  r.data[r.len] = '\0';
-  return r;
+  memcpy(s.data, buf, len);
+  s.len = len;
+  s.data[s.len] = '\0';
+  return s;
 }
 
 string str_new(const char* buf) {
@@ -205,14 +206,7 @@ void str_clear(string *s) {
   }
 }
 
-void str_clear_whole(string *s) {
-  if (!s || !s->data || s->len == 0) {
-    memset(s->data, 0, s->len);
-  }
-  s->len = 0;
-}
-
-char str_get(const string* s, size_t pos) {
+char str_idx(const string* s, size_t pos) {
   if (!s || !s->data) return '\0';
   if (pos >= s->len) return '\0';
   return s->data[pos];
@@ -224,29 +218,45 @@ bool str_append(string* s, char c) {
   return true;
 }
 
-bool str_append_many(string* s, char* buf) {
-  if (!s || !buf) return false;
-  while (*buf != '\0') da_append(s, *buf++);
+bool str_reserve(string* s, size_t extra) {
+  if (!s || !s->data) return false;
+  
+  size_t sum = extra + s->len + 1;
+
+  // if sum is enough to fit cap, dont update cap
+  if (sum <= s->cap) return true;
+
+  // for size_t overflows
+  if (sum > SIZE_MAX / 2) return false;
+
+  // sum does NOT fit
+  size_t new_cap = sum * 2;  
+  char *tmp = realloc(s->data, new_cap * sizeof(*s->data));
+  if (!tmp) return false;
+
+  s->data = tmp;
+  s->cap = new_cap;
   return true;
 }
 
-bool str_cat(string* s, const string* c) {
-  if (!s || !c) return false;
-  size_t sum = s->len + c->len;
-  if (sum >= s->cap) {
-    // we dont have enough capacity
-    size_t new_cap = s->cap == 0 ? 16 : s->cap;
-    while (sum >= new_cap)
-      new_cap *= 2;
-    s->cap = new_cap;
-    char* tmp = realloc(s->data, new_cap * sizeof(*s->data));
-    if (!tmp) return false;
-    else s->data = tmp;
-  }
-  memcpy(s->data + s->len, c->data, c->len);
-  s->len = sum;
+bool str_catn(string* s, const char* buf, size_t bufsz) {
+  if (!s || !buf || !s->data) return false;
+  if (bufsz == 0) return true;
+  
+  if (!str_reserve(s, bufsz)) return false;
+
+  memcpy(s->data + s->len, buf, bufsz);
+  s->len += bufsz;
   s->data[s->len] = '\0';
   return true;
+}
+
+bool str_cat(string* s, const char* buf) {
+  return str_catn(s, buf, strlen(buf));
+}
+
+bool str_cat_str(string* s, const string* c) {
+  return str_catn(s, c->data, c->len);
 }
 
 void str_trim(string* s) {
@@ -274,51 +284,46 @@ void str_trim(string* s) {
 void str_repeat(string* s, size_t multiplier) {
 	if (multiplier == 1) return;
 	if (multiplier == 0) return;
-	size_t new_cnt = s->len * multiplier;
-  if (new_cnt >= s->cap) {
-    // we dont have enough capacity
-    size_t new_cap = s->cap == 0 ? 16 : s->cap;
-		
-    while (new_cnt >= new_cap)
-      new_cap *= 2;
-		
-    s->cap = new_cap;
-    char* tmp = realloc(s->data, new_cap * sizeof(*s->data));
-    if (!tmp) return;
-    else s->data = tmp;
-  }
+
+  size_t new_cnt = s->len * multiplier;
+  if (!str_reserve(s, new_cnt - s->len)) return;
 
 	for (size_t i = 1; i < multiplier; ++i) {
 		memcpy(s->data + (i * s->len), s->data, s->len);
 	}
 	
-	s->data[new_cnt] = '\0';
   s->len = new_cnt;
+	s->data[new_cnt] = '\0';
 }
 
 void str_tolower(string* s) {
   if (!s || !s->data || s->len == 0) return;
-  // go char-by char and apply tolower from ctype.h
   for (size_t i = 0; i < s->len; ++i) {
-    s->data[i] = (char)tolower((unsigned char)s->data[i]);
+    char c = s->data[i];
+    unsigned char mask = (c >= 'A') & (c <= 'Z');
+    s->data[i] += mask & 32;
   }
 }
 
 void str_toupper(string* s) {
   if (!s || !s->data) return;
-  // go char-by char and apply toupper from ctype.h
   for (size_t i = 0; i < s->len; ++i) {
-    s->data[i] = (char)toupper((unsigned char)s->data[i]);
+    char c = s->data[i];
+    unsigned char mask = (c >= 'a') & (c <= 'z');
+    s->data[i] += mask & 32;
   }
 }
 
 void str_capitalize(string* s) {
   if (!s || !s->data) return;
   for (size_t i = 0; i < s->len; ++i) {
+    unsigned char c = (unsigned char)s->data[i];
     if (i == 0) {
-      s->data[i] = (char)toupper((unsigned char)s->data[i]);
+      unsigned char is_lower = (c >= 'a') & (c <= 'z');
+      s->data[i] = is_lower & 32;
     } else {
-      s->data[i] = (char)tolower((unsigned char)s->data[i]);
+      unsigned char is_upper = (c >= 'A') & (c <= 'Z');
+      s->data[i] = is_upper & 32;
     }
   }
 }
@@ -339,9 +344,8 @@ void str_format_into(string* s, const char* fmt, ...) {
     s->len = 0;
   } else if ((size_t)n >= s->cap) {
     size_t cap = s->cap;
-    if (cap >= 2) {
-      s->data[cap - 2] = '\n';
-      s->data[cap - 1] = '\0';
+    if (cap >= 1) {
+      s->data[cap - 1] = '\0'; // guarenttes \0
       s->len = cap - 1;
     } else {
       s->len = 0;
@@ -354,7 +358,12 @@ void str_format_into(string* s, const char* fmt, ...) {
 bool str_isalpha(const string* s) {
   if (!s || !s->data) return false;
   for (size_t i = 0; i < s->len; ++i) {
-    if (!isalpha((unsigned char)s->data[i])) return false;
+    unsigned char c = (unsigned char) s->data[i];
+    unsigned char is_lower = (c >= 'a') & (c <= 'z');
+    unsigned char is_upper = (c >= 'A') & (c <= 'Z');
+    // is not alpha mask
+    unsigned char mask = !(is_lower | is_upper);
+    if (mask) return false;
   }
   return true;
 }
@@ -362,9 +371,13 @@ bool str_isalpha(const string* s) {
 bool str_isalphanum(const string* s) {
   if (!s || !s->data) return false;
   for (size_t i = 0; i < s->len; ++i) {
-    bool a = isalpha((unsigned char)s->data[i]);
-    bool n = s->data[i] >= '0' && s->data[i] <= '9';
-    if (!n && !a) return false;
+    unsigned char c = (unsigned char) s->data[i];
+    unsigned char is_lower = (c >= 'a') & (c <= 'z');
+    unsigned char is_upper = (c >= 'A') & (c <= 'Z');
+    unsigned char is_num = (c >= '0') & (c <= '9');
+    // is not alphanumeric mask
+    unsigned char mask = !(is_lower | is_upper | is_num);
+    if (mask) return false;
   }
   return true;
 }
@@ -381,7 +394,5 @@ bool str_is_closed(const string* s) {
 char* str_to_cstr(const string* s) {
   return s->data;
 }
-
-#endif // STR_IMPLEMENTATION
 
 #endif // STR_H

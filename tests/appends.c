@@ -8,29 +8,7 @@ void print_str(const string* s) {
   pprint("capacity: %zu", s->cap);
   printf("==================\n");
 }
-/*
-	EXPECTED OUTPUT:
-appends.c:6: data: "kanka"
-appends.c:7: count: 5
-appends.c:8: capacity: 22
-==================
-appends.c:6: data: "kanka! "
-appends.c:7: count: 7
-appends.c:8: capacity: 22
-==================
-appends.c:6: data: "kanka! hello "
-appends.c:7: count: 13
-appends.c:8: capacity: 22
-==================
-appends.c:6: data: "kanka! hello world"
-appends.c:7: count: 18
-appends.c:8: capacity: 22
-==================
-appends.c:6: data: "world"
-appends.c:7: count: 5
-appends.c:8: capacity: 22
-==================
- */
+
 int main() {
 	string s = str_new("kanka");
 	print_str(&s);
@@ -39,19 +17,19 @@ int main() {
 	str_append(&s, ' ');
 	print_str(&s); // expected: "kanka! "
 
-	str_append_many(&s, "hello ");
+	str_cat(&s, "hello ");
 	print_str(&s); // expected: "kanka! hello "
 
 	string c = str_new("world");
-	str_cat(&s, &c);
+	str_cat_str(&s, &c);
 	print_str(&s); // expected: "kanka! hello world"
 	print_str(&c); // expected: "world"
 
-	str_append_many(&s, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+	str_cat(&s, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 	print_str(&s);
 
 	string a = str_new("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-	str_cat(&s, &a);
+	str_cat_str(&s, &a);
 	print_str(&s);
 	print_str(&a);
 

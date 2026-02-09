@@ -34,8 +34,6 @@ int main() {
 
 We have `tests/appends.c`, `tests/trims.c` etc. in tests folder you can test the features
 
-- Use `str_cat` instead of `da_append_many` because it is too slow.
-- In isalpha, isalphanumeric and tolower/toupper functions, I used functions from ctype.h because the UTF-8 encoding
 - For now, we dont have any optimizations like small-string optimization (SSO) or single-instruction multiple-data (SIMD)
 
 ## About
