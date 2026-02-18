@@ -1,13 +1,5 @@
 #include <stdio.h>
-#include "../str.h"
 #include "prettyp.h"
-
-void print_str(const string* s) {
-  pprint("data: \"%s\"", s->data);
-  pprint("count: %zu", s->len);
-  pprint("capacity: %zu", s->cap);
-  printf("==================\n");
-}
 
 int main() {
 	string s = str_new("kanka");
@@ -33,9 +25,9 @@ int main() {
 	print_str(&s);
 	print_str(&a);
 
-	string b = str_new("xxx");
-	str_repeat(&b, 5);
-	print_str(&b); // xxxxxxxxxxxxxxx -> "xxx" * 5
+	string b = str_new("ab");
+	str_repeat(&b, 15);
+	print_str(&b);
 	
 	str_free(&s);
 	str_free(&a);

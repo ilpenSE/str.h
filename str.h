@@ -1,4 +1,4 @@
-#ifndef STR_H
+ #ifndef STR_H
 #define STR_H
 
 #include <stddef.h>
@@ -22,6 +22,11 @@ typedef struct {
   size_t len; // does not include \0
   size_t cap;
 } string;
+
+typedef struct {
+  const char* data;
+  size_t len; // does not include \0
+} string_view;
 
 // assumes xs as NON-NULL pointer (you have to check)
 #define da_append(xs, x) do {                                           \
@@ -50,6 +55,29 @@ STR_API string str_newn(const char* buf, size_t len);
   to use strlen by yourself, you can use this
  */
 STR_API string str_new(const char* buf);
+
+/*
+  Constructs a new string from string_view
+*/
+STR_API string str_new_from_sv(const string_view* sv);
+
+/*
+  Makes new string_view from given string
+*/
+STR_API string_view sv_from_str(const string* s);
+
+/*
+  Makes new string view from given string with an offset value
+  if offset is bigger than string length, it returns empty string_view
+  s.data=hello\0
+  s.len=5
+  offset=0 => sv.data = hello\0, sv.len=5
+  offset=1 => sv.data = ello\0, sv.len=4
+  offset=4 => sv.data = o\0, sv.len=1
+  offset=5 => sv.data = \0, sv.len=0
+  offset>5 => sv.data = \0, sv.len=0
+*/
+STR_API string_view sv_from_str_o(const string* s, size_t offset);
 
 /*
   Reservers needed memory for the string
@@ -175,20 +203,46 @@ string str_newn(const char* buf, size_t len) {
   string s = {0};
   if (!buf) return s;
 
-  size_t cap = len + 1 + 16; // this 16 is for pre-allocation
-  char* tmp = (char*)malloc(cap);
-  if (!tmp) return s;
-  s.data = tmp;
-  s.cap = cap;
+  size_t cap = len + 16; // this 16 is for pre-allocation
+  if (!str_reserve(&s, cap)) return s;
 
   memcpy(s.data, buf, len);
+  s.data[len] = '\0';
   s.len = len;
-  s.data[s.len] = '\0';
   return s;
 }
 
 string str_new(const char* buf) {
   return str_newn(buf, strlen(buf));
+}
+
+string str_new_from_sv(const string_view* sv) {
+  string s = {0};
+  if (!sv) return s;
+
+  s = str_newn(sv->data, sv->len);
+  return s;
+}
+
+string_view sv_from_str(const string* s) {
+  string_view sv = {0};
+  if (!s) return sv;
+
+  sv.data = s->data;
+  sv.len = s->len;
+
+  return sv;
+}
+
+string_view sv_from_str_o(const string* s, size_t offset) {
+  string_view sv = {0};
+  if (!s) return sv;
+
+  if (offset > s->len) offset = s->len;
+
+  sv.data = s->data + offset;
+  sv.len = s->len - offset;
+  return sv;
 }
 
 void str_free(string* s) {
@@ -219,7 +273,7 @@ bool str_append(string* s, char c) {
 }
 
 bool str_reserve(string* s, size_t extra) {
-  if (!s || !s->data) return false;
+  if (!s) return false;
   
   size_t sum = extra + s->len + 1;
 
@@ -230,8 +284,8 @@ bool str_reserve(string* s, size_t extra) {
   if (sum > SIZE_MAX / 2) return false;
 
   // sum does NOT fit
-  size_t new_cap = sum * 2;  
-  char *tmp = realloc(s->data, new_cap * sizeof(*s->data));
+  size_t new_cap = sum * 2;
+  char *tmp = (char*)realloc(s->data, new_cap);
   if (!tmp) return false;
 
   s->data = tmp;
@@ -289,7 +343,7 @@ void str_repeat(string* s, size_t multiplier) {
   if (!str_reserve(s, new_cnt - s->len)) return;
 
 	for (size_t i = 1; i < multiplier; ++i) {
-		memcpy(s->data + (i * s->len), s->data, s->len);
+		memmove(s->data + (i * s->len), s->data, s->len);
 	}
 	
   s->len = new_cnt;
@@ -299,18 +353,18 @@ void str_repeat(string* s, size_t multiplier) {
 void str_tolower(string* s) {
   if (!s || !s->data || s->len == 0) return;
   for (size_t i = 0; i < s->len; ++i) {
-    char c = s->data[i];
-    unsigned char mask = (c >= 'A') & (c <= 'Z');
-    s->data[i] += mask & 32;
+    unsigned char c = (unsigned char)s->data[i];
+    unsigned char is_upper = (c >= 'A') & (c <= 'Z');
+    s->data[i] += is_upper * 32;
   }
 }
 
 void str_toupper(string* s) {
   if (!s || !s->data) return;
   for (size_t i = 0; i < s->len; ++i) {
-    char c = s->data[i];
-    unsigned char mask = (c >= 'a') & (c <= 'z');
-    s->data[i] += mask & 32;
+    unsigned char c = (unsigned char)s->data[i];
+    unsigned char is_lower = (c >= 'a') & (c <= 'z');
+    s->data[i] -= is_lower * 32;
   }
 }
 
@@ -320,10 +374,10 @@ void str_capitalize(string* s) {
     unsigned char c = (unsigned char)s->data[i];
     if (i == 0) {
       unsigned char is_lower = (c >= 'a') & (c <= 'z');
-      s->data[i] = is_lower & 32;
+      s->data[i] -= is_lower * 32;
     } else {
       unsigned char is_upper = (c >= 'A') & (c <= 'Z');
-      s->data[i] = is_upper & 32;
+      s->data[i] += is_upper * 32;
     }
   }
 }

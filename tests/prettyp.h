@@ -2,6 +2,7 @@
 #define PRETTY_PRINT_H
 
 #include <stdio.h>
+#include "../str.h"
 
 #define COLOR_RED     "\033[0;31m"
 #define COLOR_GREEN   "\033[0;32m"
@@ -18,5 +19,18 @@
     printf(COLOR_RED "[ERROR]" COLOR_BLUE "%s:%d: " COLOR_RESET \
            fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);  \
   } while (0)
+
+#define print_str(s) do {                       \
+    pprint("data: \"%s\"", (s)->data);          \
+    pprint("count: %zu", (s)->len);             \
+    pprint("capacity: %zu", (s)->cap);          \
+    printf("==================\n");             \
+  } while(0)
+
+#define print_sv(sv) do {                       \
+    pprint("[SV] data: \"%s\"", (sv)->data);    \
+    pprint("[SV] count: %zu", (sv)->len);       \
+    printf("==================\n");             \
+  } while(0)
 
 #endif // PRETTY_PRINT_H

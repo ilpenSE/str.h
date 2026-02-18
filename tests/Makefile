@@ -8,15 +8,22 @@ LIFECYCLE = lifecycle
 TRIMS = trims
 APPENDS = appends
 CHARS = chars
+VIEWS = views
+
+TARGETS = $(BUILD)/$(LIFECYCLE) \
+          $(BUILD)/$(APPENDS) \
+          $(BUILD)/$(TRIMS) \
+          $(BUILD)/$(CHARS) \
+          $(BUILD)/$(VIEWS)
 
 .PHONY: all clean
-all: $(BUILD) $(LIFECYCLE) $(APPENDS) $(TRIMS) $(CHARS)
+all: $(BUILD) $(TARGETS)
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
-$(LIFECYCLE) $(CHARS) $(TRIMS) $(APPENDS): %: %.c $(STR_H) | $(BUILD)
-	$(CC) $(CFLAGS) -o $(BUILD)/$@ $<
+$(BUILD)/%: %.c $(STR_H) | $(BUILD)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
 	rm -rf $(BUILD)

@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "../str.h"
 #include "prettyp.h"
 
 int main() {

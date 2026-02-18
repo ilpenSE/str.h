@@ -5,23 +5,22 @@ lifecycle="$buildf/lifecycle"
 trims="$buildf/trims"
 appends="$buildf/appends"
 chars="$buildf/chars"
+views="$buildf/views"
 
-make -B
+make
 
 case "$1" in
 		lifecycle)
-				./$lifecycle
-				;;
+				./$lifecycle ;;
 		trims)
-				./$trims
-				;;
+				./$trims ;;
 		appends)
 				./$appends
 				;;
 		chars)
-				./$chars
-				;;
+				./$chars ;;
+		views)
+				./$views ;;
 		*)
-				$lifecycle $trims $appends $chars
-				;;
+				$lifecycle; $trims; $appends; $chars; $views ;;
 esac
