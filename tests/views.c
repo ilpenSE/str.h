@@ -7,7 +7,7 @@ int main() {
   string_view sv2 = sv_from_str_o(&s, 4); // o, World!
   string_view sv3 = sv_from_str_o(&s, 50); // empty
   string_view sv4 = sv_from_str_o(&s, 0); // Hello, World!
-	
+  
   print_sv(&sv1);
   print_sv(&sv2);
   print_sv(&sv3);

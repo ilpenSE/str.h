@@ -336,18 +336,18 @@ void str_trim(string* s) {
 }
 
 void str_repeat(string* s, size_t multiplier) {
-	if (multiplier == 1) return;
-	if (multiplier == 0) return;
+  if (multiplier == 1) return;
+  if (multiplier == 0) return;
 
   size_t new_cnt = s->len * multiplier;
   if (!str_reserve(s, new_cnt - s->len)) return;
 
-	for (size_t i = 1; i < multiplier; ++i) {
-		memmove(s->data + (i * s->len), s->data, s->len);
-	}
-	
+  for (size_t i = 1; i < multiplier; ++i) {
+    memmove(s->data + (i * s->len), s->data, s->len);
+  }
+  
   s->len = new_cnt;
-	s->data[new_cnt] = '\0';
+  s->data[new_cnt] = '\0';
 }
 
 void str_tolower(string* s) {
@@ -442,7 +442,7 @@ void str_close(string* s) {
 }
 
 bool str_is_closed(const string* s) {
-	return s->data[s->len] == '\0' ? true : false;
+  return s->data[s->len] == '\0' ? true : false;
 }
 
 char* str_to_cstr(const string* s) {
