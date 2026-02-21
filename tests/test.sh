@@ -10,17 +10,17 @@ views="$buildf/views"
 make
 
 case "$1" in
-		lifecycle)
-				./$lifecycle ;;
-		trims)
-				./$trims ;;
-		appends)
-				./$appends
-				;;
-		chars)
-				./$chars ;;
-		views)
-				./$views ;;
-		*)
-				$lifecycle; $trims; $appends; $chars; $views ;;
+    lifecycle)
+        ./$lifecycle ;;
+    trims)
+        ./$trims ;;
+    appends)
+        ./$appends
+        ;;
+    chars)
+        ./$chars ;;
+    views)
+        ./$views ;;
+    *)
+        $lifecycle; $trims; $appends; $chars; $views ;;
 esac
