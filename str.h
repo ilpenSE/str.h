@@ -1,4 +1,4 @@
- #ifndef STR_H
+#ifndef STR_H
 #define STR_H
 
 #include <stddef.h>
@@ -29,19 +29,6 @@ typedef struct {
 } string_view;
 
 typedef unsigned char uchar_t;
-
-// assumes xs as NON-NULL pointer (you have to check)
-#define da_append(xs, x) do {                                           \
-    size_t new_cap = (xs)->cap;                                         \
-    if ((xs)->len >= new_cap) {                                         \
-      new_cap = new_cap == 0 ? 64 : new_cap * 2;                        \
-      (xs)->data = realloc((xs)->data, new_cap * sizeof(*(xs)->data));  \
-    }                                                                   \
-    if ((xs)->data) {                                                   \
-      (xs)->data[(xs)->len++] = x;                                      \
-      (xs)->cap = new_cap;                                              \
-    }                                                                   \
-  } while (0)
 
 /*
   Makes and returns string struct from C-strings with length
@@ -80,6 +67,14 @@ STR_API string_view sv_from_str(const string* s);
   offset>5 => sv.data = \0, sv.len=0
 */
 STR_API string_view sv_from_str_o(const string* s, size_t offset);
+
+/*
+  Writes string view data with length to out buffer
+  Since we cannot mutate string view or we cannot return
+  local stack variables in functions, we use call-stack method
+  NOTE: out buffer's length check is in your responsibility.
+*/
+STR_API void sv_tostr(const string_view* sv, char* out);
 
 /*
   Reservers needed memory for the string
@@ -252,6 +247,12 @@ string_view sv_from_str_o(const string* s, size_t offset) {
   return sv;
 }
 
+void sv_tostr(const string_view* sv, char* out) {
+  if (!sv || !out) return;
+  memcpy(out, sv->data, sv->len);
+  out[sv->len] = '\0';
+}
+
 void str_free(string* s) {
   if (!s || !s->data) return;
   free(s->data);
@@ -285,7 +286,11 @@ char str_idx(const string* s, size_t pos) {
 
 bool str_append(string* s, char c) {
   if (!s) return false;
-  da_append(s, c);
+
+  if (!str_reserve(s, 1)) return false;
+
+  s->data[s->len++] = c;
+  s->data[s->len] = '\0';
   return true;
 }
 
