@@ -28,6 +28,8 @@ typedef struct {
   size_t len; // does not include \0
 } string_view;
 
+typedef unsigned char uchar_t;
+
 // assumes xs as NON-NULL pointer (you have to check)
 #define da_append(xs, x) do {                                           \
     size_t new_cap = (xs)->cap;                                         \
@@ -85,6 +87,11 @@ STR_API string_view sv_from_str_o(const string* s, size_t offset);
   Extra is additional bytes to append
  */
 STR_API bool str_reserve(string* s, size_t extra);
+
+/*
+  Shrinks the memory (cap field) to length + 1
+*/
+STR_API bool str_shrink_to_fit(string* s);
 
 /*
   Returns char in that string by a pos value
@@ -260,6 +267,16 @@ void str_clear(string *s) {
   }
 }
 
+bool str_shrink_to_fit(string* s) {
+  if (!s || s->cap == 0) return false;
+  size_t new_cap = s->len + 1;
+  void* tmp = realloc(s->data, new_cap);
+  if (!tmp) return false;
+  else s->data = (char*)tmp;
+  s->cap = new_cap;
+  return true;
+}
+
 char str_idx(const string* s, size_t pos) {
   if (!s || !s->data) return '\0';
   if (pos >= s->len) return '\0';
@@ -317,14 +334,14 @@ void str_trim(string* s) {
   if (!s || !s->data || s->len == 0) return;
 
   // nuke the whitespaces at the end
-  while (s->len > 0 && isspace((unsigned char)s->data[s->len - 1])) {
+  while (s->len > 0 && isspace((uchar_t)s->data[s->len - 1])) {
     s->len -= 1;
   }
   s->data[s->len] = '\0';
   
   // count how many spaces at the begin
   size_t start = 0;
-  while (start < s->len && isspace((unsigned char)s->data[start])) {
+  while (start < s->len && isspace((uchar_t)s->data[start])) {
     start += 1;
   }
 
@@ -353,8 +370,8 @@ void str_repeat(string* s, size_t multiplier) {
 void str_tolower(string* s) {
   if (!s || !s->data || s->len == 0) return;
   for (size_t i = 0; i < s->len; ++i) {
-    unsigned char c = (unsigned char)s->data[i];
-    unsigned char is_upper = (c >= 'A') & (c <= 'Z');
+    uchar_t c = (uchar_t)s->data[i];
+    uchar_t is_upper = (c >= 'A') & (c <= 'Z');
     s->data[i] += is_upper * 32;
   }
 }
@@ -362,8 +379,8 @@ void str_tolower(string* s) {
 void str_toupper(string* s) {
   if (!s || !s->data) return;
   for (size_t i = 0; i < s->len; ++i) {
-    unsigned char c = (unsigned char)s->data[i];
-    unsigned char is_lower = (c >= 'a') & (c <= 'z');
+    uchar_t c = (uchar_t)s->data[i];
+    uchar_t is_lower = (c >= 'a') & (c <= 'z');
     s->data[i] -= is_lower * 32;
   }
 }
@@ -371,12 +388,12 @@ void str_toupper(string* s) {
 void str_capitalize(string* s) {
   if (!s || !s->data) return;
   for (size_t i = 0; i < s->len; ++i) {
-    unsigned char c = (unsigned char)s->data[i];
+    uchar_t c = (uchar_t)s->data[i];
     if (i == 0) {
-      unsigned char is_lower = (c >= 'a') & (c <= 'z');
+      uchar_t is_lower = (c >= 'a') & (c <= 'z');
       s->data[i] -= is_lower * 32;
     } else {
-      unsigned char is_upper = (c >= 'A') & (c <= 'Z');
+      uchar_t is_upper = (c >= 'A') & (c <= 'Z');
       s->data[i] += is_upper * 32;
     }
   }
@@ -412,11 +429,11 @@ void str_format_into(string* s, const char* fmt, ...) {
 bool str_isalpha(const string* s) {
   if (!s || !s->data) return false;
   for (size_t i = 0; i < s->len; ++i) {
-    unsigned char c = (unsigned char) s->data[i];
-    unsigned char is_lower = (c >= 'a') & (c <= 'z');
-    unsigned char is_upper = (c >= 'A') & (c <= 'Z');
+    uchar_t c = (uchar_t) s->data[i];
+    uchar_t is_lower = (c >= 'a') & (c <= 'z');
+    uchar_t is_upper = (c >= 'A') & (c <= 'Z');
     // is not alpha mask
-    unsigned char mask = !(is_lower | is_upper);
+    uchar_t mask = !(is_lower | is_upper);
     if (mask) return false;
   }
   return true;
@@ -425,12 +442,12 @@ bool str_isalpha(const string* s) {
 bool str_isalphanum(const string* s) {
   if (!s || !s->data) return false;
   for (size_t i = 0; i < s->len; ++i) {
-    unsigned char c = (unsigned char) s->data[i];
-    unsigned char is_lower = (c >= 'a') & (c <= 'z');
-    unsigned char is_upper = (c >= 'A') & (c <= 'Z');
-    unsigned char is_num = (c >= '0') & (c <= '9');
+    uchar_t c = (uchar_t) s->data[i];
+    uchar_t is_lower = (c >= 'a') & (c <= 'z');
+    uchar_t is_upper = (c >= 'A') & (c <= 'Z');
+    uchar_t is_num = (c >= '0') & (c <= '9');
     // is not alphanumeric mask
-    unsigned char mask = !(is_lower | is_upper | is_num);
+    uchar_t mask = !(is_lower | is_upper | is_num);
     if (mask) return false;
   }
   return true;

@@ -1,7 +1,7 @@
 # TODO List for str.h
 
 - [x] Implement string_views
-- [ ] `str_shrink_to_fit` memory hygiene
+- [x] `str_shrink_to_fit` memory hygiene
 - [ ] `sv_to_str`, `str_substr`
 - [ ] `str_cmp`, `str_eq`, `sv_cmp` `sv_eq`
 - [ ] `str_find`, `str_replace`, `str_replace_all`, `sv_find`
