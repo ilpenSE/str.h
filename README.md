@@ -40,6 +40,6 @@ We have `tests/appends.c`, `tests/trims.c` etc. in tests folder you can test the
 
 2026, ilpeN or ilpenSE
 
-[YouTube](https://youtube.com/@ilpenwastaken)
-[Instagram](https://instagram.com/ilpenwastaken)
-[X](https://x.com/@ilpenwastaken)
+- [YouTube](https://youtube.com/@ilpenwastaken)
+- [Instagram](https://instagram.com/ilpenwastaken)
+- [Twitter (X)](https://x.com/@ilpenwastaken)

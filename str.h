@@ -5,16 +5,11 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
 
-// winslop shit
-#ifdef _WIN32
-#define STR_API __declspec(dllexport)
-#else // unix:
-#define STR_API __attribute__((visibility("default")))
+#ifdef __cplusplus
+#define STRDEF extern "C"
+#else
+#define STRDEF extern
 #endif
 
 typedef struct {
@@ -36,24 +31,24 @@ typedef unsigned char uchar_t;
   But if you dont have and if you're using strlen, you can use
   str_from_cstr, it does strlen
  */
-STR_API string str_newn(const char* buf, size_t len);
+STRDEF string str_newn(const char* buf, size_t len);
 
 /*
   str_newn with no len value, it calculates len via strlen
   If you dont have your string's length value or just dont want
   to use strlen by yourself, you can use this
  */
-STR_API string str_new(const char* buf);
+STRDEF string str_new(const char* buf);
 
 /*
   Constructs a new string from string_view
 */
-STR_API string str_new_from_sv(const string_view* sv);
+STRDEF string str_new_from_sv(const string_view* sv);
 
 /*
   Makes new string_view from given string
 */
-STR_API string_view sv_from_str(const string* s);
+STRDEF string_view sv_from_str(const string* s);
 
 /*
   Makes new string view from given string with an offset value
@@ -66,7 +61,7 @@ STR_API string_view sv_from_str(const string* s);
   offset=5 => sv.data = \0, sv.len=0
   offset>5 => sv.data = \0, sv.len=0
 */
-STR_API string_view sv_from_str_o(const string* s, size_t offset);
+STRDEF string_view sv_from_str_o(const string* s, size_t offset);
 
 /*
   Writes string view data with length to out buffer
@@ -74,62 +69,62 @@ STR_API string_view sv_from_str_o(const string* s, size_t offset);
   local stack variables in functions, we use call-stack method
   NOTE: out buffer's length check is in your responsibility.
 */
-STR_API void sv_tostr(const string_view* sv, char* out);
+STRDEF void sv_tostr(const string_view* sv, char* out);
 
 /*
   Reservers needed memory for the string
   It usually multiplies it by 2 if string is too long
   Extra is additional bytes to append
  */
-STR_API bool str_reserve(string* s, size_t extra);
+STRDEF bool str_reserve(string* s, size_t extra);
 
 /*
   Shrinks the memory (cap field) to length + 1
 */
-STR_API bool str_shrink_to_fit(string* s);
+STRDEF bool str_shrink_to_fit(string* s);
 
 /*
   Returns char in that string by a pos value
   pos stands for position (the index, starts from zero)
  */
-STR_API char str_idx(const string* s, size_t pos);
+STRDEF char str_idx(const string* s, size_t pos);
 
 /*
   It appends char into that string
   Automatically puts \0 at the end
  */
-STR_API bool str_append(string* s, char c);
+STRDEF bool str_append(string* s, char c);
 
 /*
   Str_cat but with C-type strings (char*)
   "bufsz" is length of buf.
 */
-STR_API bool str_catn(string* s, const char* buf, size_t bufsz);
+STRDEF bool str_catn(string* s, const char* buf, size_t bufsz);
 
 /*
   Wrapper of str_append_manyn, calls strlen on buf
  */
-STR_API bool str_cat(string* s, const char* buf);
+STRDEF bool str_cat(string* s, const char* buf);
 
 /*
   It concatenates dest string and src string
   It puts src string's chars into dest string and
   puts \0 at the end and updates count and capacity (if needed)
  */
-STR_API bool str_cat_str(string* dest, const string* src);
+STRDEF bool str_cat_str(string* dest, const string* src);
 
 /*
   It gets "data" field in that string
   You can always use s->data or s.data
   But this checks NULL or empty conditions
  */
-STR_API char* str_to_cstr(const string* s);
+STRDEF char* str_to_cstr(const string* s);
 
 /*
   Calls "free" in stdlib.h and clears the string
   Use this by your hand if you dont want memory leaks
  */
-STR_API void str_free(string* s);
+STRDEF void str_free(string* s);
 
 /*
   It clears the string, sets count to zero
@@ -138,23 +133,23 @@ STR_API void str_free(string* s);
   Use this function, this is way faster than zeroing all the data
   Capacity still there and this function DOES NOT FREE THE MEMORY!
  */
-STR_API void str_clear(string* s);
+STRDEF void str_clear(string* s);
 
 /*
   Nukes whitespaces at the end and begin
  */
-STR_API void str_trim(string* s);
+STRDEF void str_trim(string* s);
 
 /*
   Closes the string if not closed or corrupted
   Inserts \0 at the end (depends on count field)
  */
-STR_API void str_close(string* s);
+STRDEF void str_close(string* s);
 
 /*
   Checks if string is ended with \0
  */
-STR_API bool str_is_closed(const string* s);
+STRDEF bool str_is_closed(const string* s);
 
 /*
   Repeats string with provided count, modifies original string
@@ -162,33 +157,33 @@ STR_API bool str_is_closed(const string* s);
   that means if you provide "xx" as string and 4 as count,
   you get: "xxxxxxxx" (=4*"xx")
  */
-STR_API void str_repeat(string* s, size_t count);
+STRDEF void str_repeat(string* s, size_t count);
 
 /*
   Formats the string with given format string and variadics
   Acts like running a temporary snprintf and applying it to string
 */
-STR_API void str_format_into(string* s, const char* fmt, ...);
+STRDEF void str_format_into(string* s, const char* fmt, ...);
 
 /*
   Makes all alpha characters in that string lowercased - ASCII only
  */
-STR_API void str_tolower(string* s);
+STRDEF void str_tolower(string* s);
 
 /*
   Makes all alpha characters in that string uppercased - ASCII only
 */
-STR_API void str_toupper(string* s);
+STRDEF void str_toupper(string* s);
 
 /*
   Checks if all of chars in that string is alpha - ASCII only
  */
-STR_API bool str_isalpha(const string* s);
+STRDEF bool str_isalpha(const string* s);
 
 /*
   Checks if all chars in string is alphanumeric - ASCII only
  */
-STR_API bool str_isalphanum(const string* s);
+STRDEF bool str_isalphanum(const string* s);
 
 /*
   Capitalizes string like this:
@@ -199,7 +194,13 @@ STR_API bool str_isalphanum(const string* s);
   Uppers first char if it is alpha and lowers the rest (alpha ones)
   1hello -> 1hello (because 1 is not alpha)
  */
-STR_API void str_capitalize(string* s);
+STRDEF void str_capitalize(string* s);
+
+#ifdef STR_IMPLEMENTATION
+
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 string str_newn(const char* buf, size_t len) {
   string s = {0};
@@ -470,5 +471,7 @@ bool str_is_closed(const string* s) {
 char* str_to_cstr(const string* s) {
   return s->data;
 }
+
+#endif // STR_IMPLEMENTATION
 
 #endif // STR_H

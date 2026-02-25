@@ -10,14 +10,14 @@
 #define COLOR_BLUE    "\033[0;34m"
 #define COLOR_RESET   "\033[0;0m"
 
-#define pprint(fmt, ...) do { \
-    printf(COLOR_BLUE "%s:%d: " COLOR_RESET \
+#define pprint(fmt, ...) do {                             \
+    printf(COLOR_BLUE "%s:%d: " COLOR_RESET               \
            fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);  \
   } while (0)
 
-#define pperror(fmt, ...) do { \
-    printf(COLOR_RED "[ERROR]" COLOR_BLUE "%s:%d: " COLOR_RESET \
-           fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);  \
+#define pperror(fmt, ...) do {                                          \
+    fprintf(stderr, COLOR_RED "[ERROR]" COLOR_BLUE "%s:%d: " COLOR_RESET \
+            fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);               \
   } while (0)
 
 #define print_str(s) do {                       \
