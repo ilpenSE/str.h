@@ -5,7 +5,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
-#define VECTOR_IMPLEMENTATION
 #include "vector.h"
 
 #ifdef __cplusplus
@@ -67,7 +66,12 @@ STRDEF String str_new_from_sv(const StringView* sv);
   Slices string in range [start, end) and makes new StringView
   Length, start and end are checked
 */
-STRDEF StringView sv_from_cstr(const char* buf, size_t len, size_t start, size_t end);
+STRDEF StringView sv_from_cstre(const char* buf, size_t len, size_t start, size_t end);
+
+/*
+  Produce StringView from zero-ended const strings without explicit start and end
+*/
+STRDEF StringView sv_from_cstr(const char* buf);
 
 /*
   Slices heap-allocated string, wrapper to sv_from_cstr
@@ -238,11 +242,13 @@ STRDEF Vector(StringView) str_split(String* s, const char delim);
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <ctype.h>
 
 typedef uintptr_t word_t;
 #define WORD_SIZE sizeof(word_t)
-#define WORD_MASK WORD_SIZE - 1
+#define WORD_MASK (WORD_SIZE - 1)
 
 String str_newn(const char* buf, size_t len) {
   String s = {0};
@@ -265,7 +271,7 @@ String str_new_from_sv(const StringView* sv) {
   return s;
 }
 
-StringView sv_from_cstr(const char* buf, size_t len, size_t start, size_t end) {
+StringView sv_from_cstre(const char* buf, size_t len, size_t start, size_t end) {
   StringView sv = {0};
   if (start > end || start > len || end > len) return sv;
   sv.data = buf + start;
@@ -273,8 +279,13 @@ StringView sv_from_cstr(const char* buf, size_t len, size_t start, size_t end) {
   return sv;
 }
 
+StringView sv_from_cstr(const char* buf) {
+  size_t buflen = strlen(buf);
+  return sv_from_cstre(buf, buflen, 0, buflen + 1);
+}
+
 StringView sv_from_str(const String* s, size_t start, size_t end) {
-  return sv_from_cstr(s->data, s->len, start, end);
+  return sv_from_cstre(s->data, s->len, start, end);
 }
 
 void sv_tostr(const StringView* sv, char* out) {
@@ -382,7 +393,7 @@ bool cstr_equals(const char* buf1, const char* buf2, size_t n) {
   const char* q = buf2;
 
   // Alignment shit
-  size_t prefix = (size_t)(-(word_t)p & WORD_MASK);
+  size_t prefix = (size_t)((-(word_t)p) & WORD_MASK);
   if (prefix > n) prefix = n;
   while (prefix--) {
     if (*p++ != *q++) return false;
