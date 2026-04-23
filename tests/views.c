@@ -9,7 +9,8 @@ int main() {
   StringView sv4 = sv_from_str(&s, 7, s.len); // World!
 
   const char* some_str = "Çağatay Akman";
-  StringView sv5 = sv_from_cstr(some_str, strlen(some_str), 0, 5); // Çağ
+  //                      ^^^ -> 5 bytes
+  StringView sv5 = sv_from_cstre(some_str, strlen(some_str), 0, 5); // Çağ
 
   print_sv(&sv1);
   print_sv(&sv2);

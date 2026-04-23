@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include "../str.h"
-#include "../vector.h"
+#include "../sv.h"
 
 #define COLOR_RED     "\033[0;31m"
 #define COLOR_GREEN   "\033[0;32m"
@@ -29,22 +29,9 @@
   } while(0)
 
 #define print_sv(sv) do {                       \
-    pprint("[SV] data: \"" sv_fmt "\"", sv_arg(sv));    \
+    pprint("[SV] data: \"" SV_FMT "\"", SV_ARG(sv));    \
     pprint("[SV] count: %zu", (sv)->len);       \
     printf("==================\n");             \
   } while(0)
-
-void print_sv_vector(Vector(StringView)* v) {
-  size_t len = vec_len(v);
-  printf("{items: [");
-  if (v->items) {
-    vec_foreach(v, it) {
-      bool is_last = sv_equals(it, &vec_last(v));
-      printf("\"" sv_fmt "\"%s", sv_arg(it), (is_last ? "" : ", "));
-    }
-  }
-  printf("], ");
-  printf("length: %zu}\n", len);
-}
 
 #endif // PRETTY_PRINT_H

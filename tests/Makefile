@@ -1,34 +1,29 @@
 CC = gcc
-CFLAGS = -g -DSTR_IMPLEMENTATION
+CFLAGS = -Wall -Wextra -ggdb -DSTR_IMPLEMENTATION -DSV_IMPLEMENTATION
 
 STR_H = ../str.h
+SV_H = ../sv.h
 BUILD = build
 
-LIFECYCLE = lifecycle
-TRIMS = trims
-APPENDS = appends
-CHARS = chars
-VIEWS = views
-SPLIT = split
-EQUALS = equals
+TARGETS = lifecycle \
+          trims \
+          appends \
+          chars \
+          views \
+          equals \
+          empty \
+          chop 
 
-TARGETS = $(LIFECYCLE) \
-          $(APPENDS) \
-          $(TRIMS) \
-          $(CHARS) \
-          $(VIEWS) \
-					$(SPLIT) \
-					$(EQUALS)
+.PHONY: all clean $(TARGETS)
+all: $(BUILD) $(addprefix $(BUILD)/, $(TARGETS))
 
-.PHONY: all clean
-all: $(BUILD) $(TARGETS)
+$(TARGETS): %: $(BUILD)/%
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
-%: %.c $(STR_H) | $(BUILD)
-	$(CC) $(CFLAGS) -o $(BUILD)/$@ $<
+$(BUILD)/%: %.c $(STR_H) $(SV_H) | $(BUILD)
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
 	rm -rf $(BUILD)
-
