@@ -3,14 +3,14 @@
 
 int main() {
   String s = str_new("Hello, World!");
-  StringView sv1 = sv_from_str(&s, 0, s.len); // Hello, World!
-  StringView sv2 = sv_from_str(&s, 0, 4); // Hell
-  StringView sv3 = sv_from_str(&s, 0, 50); // empty
-  StringView sv4 = sv_from_str(&s, 7, s.len); // World!
+  StringView sv1 = sv_from_str(&s, .start = 0, .end = s.len); // Hello, World!
+  StringView sv2 = sv_from_str(&s, .start = 0, .end = 4); // Hell
+  StringView sv3 = sv_from_str(&s, .start = 0, .end = 50); // empty
+  StringView sv4 = sv_from_str(&s, .start = 7, .end = s.len); // World!
 
   const char* some_str = "Çağatay Akman";
   //                      ^^^ -> 5 bytes
-  StringView sv5 = sv_from_cstre(some_str, strlen(some_str), 0, 5); // Çağ
+  StringView sv5 = sv_from_cstre(some_str, strlen(some_str), .start = 0, .end = 5); // Çağ
 
   print_sv(&sv1);
   print_sv(&sv2);

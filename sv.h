@@ -15,7 +15,7 @@ typedef struct {
   const char* data; // not null terminated
   size_t len;
 } StringView;
-#endif // __StringView_defined
+#endif
 
 #ifndef __String_defined
 #define __String_defined
@@ -24,7 +24,15 @@ typedef struct {
   size_t len; // does not include \0
   size_t cap;
 } String;
-#endif // __String_defined
+#endif
+
+#ifndef __StringSlice_defined
+#define __StringSlice_defined
+typedef struct {
+  size_t start;
+  size_t end;
+} StringSlice;
+#endif
 
 #ifndef __uchar_t_defined
 typedef unsigned char uchar_t;
@@ -34,20 +42,23 @@ typedef unsigned char uchar_t;
 #define SV_ARG(sv) (int)(sv)->len, (sv)->data
 #define SV_FMT "%.*s"
 
-// Bridge functions between str.h and sv.h
-// String must be defined, including str.h defines it
-#ifdef __String_defined
+// Usage: sv_from_str(s, .start = 0, .end = s->len)
+// or: sv_from_str(s), sv_from_str(s, .end = 10) (default values'll be 0)
+#define sv_from_str(s, ...) sv_from_str_impl((s), (StringSlice){ __VA_ARGS__ })
+
 /*
   Slices heap-allocated string, wrapper to sv_from_cstr
 */
-SVDEF StringView sv_from_str(const String* s, size_t start, size_t end);
-#endif // __String_defined
+SVDEF StringView sv_from_str_impl(const String* s, StringSlice slice);
+
+#define sv_from_cstre(buf, len, ...) \
+  sv_from_cstre_impl((buf), (len), (StringSlice){ __VA_ARGS__ })
 
 /*
   Slices string in range [start, end] and makes new StringView
   Length, start and end are checked
 */
-SVDEF StringView sv_from_cstre(const char* buf, size_t len, size_t start, size_t end);
+SVDEF StringView sv_from_cstre_impl(const char* buf, size_t len, StringSlice slice);
 
 /*
   Produce StringView from zero-ended const strings without explicit start and end
@@ -117,24 +128,22 @@ SVDEF bool sv_isempty(const StringView* sv);
 #include <string.h>
 #include <ctype.h>
 
-StringView sv_from_cstre(const char* buf, size_t len, size_t start, size_t end) {
+StringView sv_from_cstre_impl(const char* buf, size_t len, StringSlice slice) {
   StringView sv = {0};
-  if (start > end || start > len || end > len) return sv;
-  sv.data = buf + start;
-  sv.len = end - start;
+  if (slice.start > slice.end || slice.start > len || slice.end > len) return sv;
+  sv.data = buf + slice.start;
+  sv.len = slice.end - slice.start;
   return sv;
 }
 
 StringView sv_from_cstr(const char* buf) {
   size_t buflen = strlen(buf);
-  return sv_from_cstre(buf, buflen, 0, buflen);
+  return sv_from_cstre(buf, buflen, .start = 0, .end = buflen);
 }
 
-#ifdef __String_defined
-StringView sv_from_str(const String* s, size_t start, size_t end) {
-  return sv_from_cstre(s->data, s->len, start, end);
+StringView sv_from_str_impl(const String* s, StringSlice slice) {
+  return sv_from_cstre_impl(s->data, s->len, slice);
 }
-#endif // __String_defined
 
 void sv_tostr(const StringView* sv, char* out) {
   if (!out || !sv) return;
