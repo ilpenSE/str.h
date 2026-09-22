@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 int main(void) {
-  String s = str_from(SVL("merhaba"));
+  String s = STR("merhaba");
   if (STR_INVALID(s)) {
     fprintf(stderr, "ERROR: String 's' failed to initialize\n");
     return 1;

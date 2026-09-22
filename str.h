@@ -52,6 +52,14 @@ typedef struct StringBounds {
 #define SVL(str_lit) (StringView){str_lit, sizeof(str_lit)-1}
 
 /*
+  STR(const char *buf, size_t size = strlen(buf))
+  This macro creates dynamic string from given buffer with size.
+  Use STRL for string literals.
+*/
+#define STR(...) str_from_sv(SV(__VA_ARGS__))
+#define STRL(str_lit) str_from_sv(SVL(str_lit))
+
+/*
   Use SV_FMT and SV_ARG when printing string view via printf
   String literals can be concatenated while compile-time in C.
   So you can use SV_FMT like this: "sv = "SV_FMT"\n"
