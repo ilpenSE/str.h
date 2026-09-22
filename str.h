@@ -96,6 +96,12 @@ STRDEF StringView sv_chop_until_char(StringView *self, char delim);
 #define sv_chop_by_char sv_chop_until_char
 #define sv_chop_until_delim sv_chop_until_char
 
+STRDEF StringView sv_chop_by_func(StringView *self, int (*func)(int));
+
+STRDEF void sv_trim_left(StringView *self);
+STRDEF void sv_trim_right(StringView *self);
+STRDEF void sv_trim(StringView *self);
+
 /* If the functions that returns String or StringView
    has returned one of these, it means there's an error. */
 static const String STR_INVALID = {.data=(char*)0xCCCCCCCC};
@@ -107,6 +113,7 @@ static const StringView SV_INVALID = {.data=(const char*)0xCCCCCCCC};
 
 #ifdef STR_IMPLEMENTATION
 #include <stdlib.h>
+#include <ctype.h>
 
 String str_new(size_t init_capacity)
 {
@@ -190,6 +197,8 @@ StringView sv_chop_right(StringView self, size_t count)
 
 StringView sv_chop_until_char(StringView *self, char delim)
 {
+  if (!self) return SV_INVALID;
+
   char *found = memchr(self->data, delim, self->count);
   if (!found) {
     StringView result = *self;
@@ -201,10 +210,64 @@ StringView sv_chop_until_char(StringView *self, char delim)
   size_t n = found - self->data;
   StringView result = {.data=self->data, .count=n};
 
-  self->count -= (n + 1);
+  self->count -= n + 1;
   if (self->count == 0) self->data = NULL;
   else self->data = found + 1;
   return result;
+}
+
+StringView sv_chop_by_func(StringView *self, int (*func)(int))
+{
+  if (!self) return SV_INVALID;
+
+  for (size_t i = 0; i < self->count; i++) {
+    char c = self->data[i];
+    if (!func((unsigned char)c)) continue;
+    // found
+    StringView result = {.data=self->data, .count=i};
+    self->count -= i + 1;
+    if (self->count == 0) self->data = NULL;
+    else self->data += i + 1;
+    return result;
+  }
+
+  // not found
+  StringView result = *self;
+  self->data = NULL;
+  self->count = 0;
+  return result;
+}
+
+void sv_trim_left(StringView *self)
+{
+  if (!self || self->count == 0) return;
+  size_t leading_spaces = 0;
+  for (const char *c = self->data; c < self->data + self->count; c++) {
+    if (isspace((unsigned char)(*c))) leading_spaces += 1;
+    else break;
+  }
+
+  self->count -= leading_spaces;
+  if (self->count == 0) self->data = NULL;
+  else self->data += leading_spaces;
+}
+
+void sv_trim_right(StringView *self)
+{
+  if (!self || self->count == 0) return;
+  size_t trailing_spaces = 0;
+  for (const char *c = self->data + self->count - 1; c >= self->data; c--) {
+    if (isspace((unsigned char)(*c))) trailing_spaces += 1;
+    else break;
+  }
+  self->count -= trailing_spaces;
+  if (self->count == 0) self->data = NULL;
+}
+
+void sv_trim(StringView *self)
+{
+  sv_trim_left(self);
+  sv_trim_right(self);
 }
 
 #endif // STR_IMPLEMENTATION
