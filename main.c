@@ -6,7 +6,7 @@ int main(void) {
   printf("------------------------------\n");
   {
     String s = STR("merhaba");
-    if (STR_INVALID(s)) {
+    if (STR_ISINVALID(s)) {
       fprintf(stderr, "ERROR: String 's' failed to initialize\n");
       return 1;
     }

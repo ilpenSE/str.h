@@ -108,8 +108,8 @@ static const String STR_INVALID = {.data=(char*)0xCCCCCCCC};
 static const StringView SV_INVALID = {.data=(const char*)0xCCCCCCCC};
 
 // You can check errors with these helper macros
-#define STR_INVALID(str) (str.data == STR_INVALID.data)
-#define SV_INVALID(sv) (sv.data == SV_INVALID.data)
+#define STR_ISINVALID(str) (str.data == STR_INVALID.data)
+#define SV_ISINVALID(sv) (sv.data == SV_INVALID.data)
 
 #ifdef STR_IMPLEMENTATION
 #include <stdlib.h>
