@@ -334,6 +334,7 @@ bool str_concat(String *self, StringView sv)
 void str_free(String *self)
 {
   if (!self) return;
+  // free(NULL) is no-op according to ISO C11 §7.22.3.3
   free(self->data);
   self->data = NULL; self->count = 0; self->capacity = 0;
 }

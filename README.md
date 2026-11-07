@@ -18,8 +18,12 @@
 #include "str.h"
 
 int main() {
-    String s = STR("Hello, World!");
-    printf("s = %s\n", s.data);
-    printf("s = "STR_FMT"\n", STR_ARG(s));
+  String s = STR("Hello, World!");
+  printf("s = %s\n", s.data);
+  printf("s = "STR_FMT"\n", STR_ARG(s));
 }
 ```
+
+## Documentation
+
+- Code is self-documented. But you can read documentation of each individual function in the comment where's top of its decleration
