@@ -153,7 +153,7 @@ STRDEF bool str_append(String *self, char c);
 STRDEF bool str_concat(String *self, StringView sv);
 
 /*
-  Frees and zeroes the string. It doesn't do anything if self == NULL
+  Frees and zeroes the string. It doesn't do anything if self == NULL or self is invalid (STR_INVALID).
   Double freeing same string (means free(NULL)) is no-op according to the standart (see ISO C11 §7.22.3.3)
 */
 STRDEF void str_free(String *self);
@@ -271,8 +271,8 @@ static const String STR_INVALID = {(char*)0xDEADBEEF, 0, 0};
 static const StringView SV_INVALID = {(const char*)0xDEADBEEF, 0};
 
 // You can check errors with these helper macros
-#define STR_ISINVALID(str) (str.data == STR_INVALID.data)
-#define SV_ISINVALID(sv) (sv.data == SV_INVALID.data)
+#define STR_ISINVALID(str) ((str).data == STR_INVALID.data)
+#define SV_ISINVALID(sv) ((sv).data == SV_INVALID.data)
 
 #ifdef STR_IMPLEMENTATION
 #include <stdlib.h>
@@ -335,7 +335,7 @@ void str_free(String *self)
 {
   if (!self) return;
   // free(NULL) is no-op according to ISO C11 §7.22.3.3
-  free(self->data);
+  if (!STR_ISINVALID(*self)) free(self->data);
   self->data = NULL; self->count = 0; self->capacity = 0;
 }
 
