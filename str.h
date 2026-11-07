@@ -16,6 +16,8 @@
   - Define `STR_IMPLEMENTATION` somewhere ONCE! Or you get linker errors of multiple definitions
   - And do NOT define it through command line (-DSTR_IMPLEMENTATION) if you have multiple translation units in that command line.
     Because it usually means define this macro in ALL translation units. And you can violate One-Definition-Rule (ODR)
+  - WARNING: If you're using MSVC, when compiling this header or TUs with this header, add /Zc:preprocessor flag to have
+    a proper preprocessor instead of some shit-ass preprocessor from 90's
 
   The MIT License
   Copyright (c) 2026 ilpeN
@@ -52,6 +54,10 @@
 #include <stddef.h>
 #include <string.h>
 
+#if defined(_MSC_VER) && !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL
+  #error "DO NOT use MSVC shitty ass traditional preprocessor, add /Zc:preprocessor flag"
+#endif
+
 /*
   Definition of dynamic string structure.
   Owns the underlying buffer in heap pointed by `data`
@@ -81,7 +87,7 @@ typedef struct StringView {
 
 // Do not use these macros directly.
 #define _SV_impl(buf, size) (StringView){buf, size}
-#define _SV1(buf)           _SV_impl((buf), strlen(buf))
+#define _SV1(buf)           _SV_impl((buf), strlen((buf)))
 #define _SV2(buf, size)     _SV_impl((buf), (size))
 #define _SV_GET_MACRO(_1, _2, NAME, ...) NAME
 
@@ -92,7 +98,7 @@ typedef struct StringView {
   Use SVL(literal) for creating string view from string literals.
 */
 #define SV(...) _SV_GET_MACRO(__VA_ARGS__, _SV2, _SV1)(__VA_ARGS__)
-#define SVS(str) SV(str.data, str.count)
+#define SVS(str) SV((str).data, (str).count)
 #define SVL(str_lit) (StringView){str_lit, sizeof(str_lit)-1}
 
 /*
@@ -112,10 +118,15 @@ typedef struct StringView {
   You can use these when printing dynamic Strings btw.
   Or use STR_FMT and STR_ARG they're identical.
 */
-#define SV_ARG(sv) (int)sv.count, sv.data
+#define SV_ARG(sv) \
+  (SV_ISINVALID(sv) ? -1 : (int)(sv).count), \
+  (SV_ISINVALID(sv) ? "<invalid>" : (sv).data)
 #define SV_FMT "%.*s"
+
 #define STR_FMT SV_FMT
-#define STR_ARG SV_ARG
+#define STR_ARG(str) \
+  (STR_ISINVALID(str) ? -1 : (int)(str).count), \
+  (STR_ISINVALID(str) ? "<invalid>" : (str).data)
 
 // Dynamic strings functions
 
@@ -153,7 +164,7 @@ STRDEF bool str_append(String *self, char c);
 STRDEF bool str_concat(String *self, StringView sv);
 
 /*
-  Frees and zeroes the string. It doesn't do anything if self == NULL or self is invalid (STR_INVALID).
+  Frees and zeroes the string. It doesn't do anything if self == NULL
   Double freeing same string (means free(NULL)) is no-op according to the standart (see ISO C11 §7.22.3.3)
 */
 STRDEF void str_free(String *self);
@@ -336,6 +347,7 @@ void str_free(String *self)
   if (!self) return;
   // free(NULL) is no-op according to ISO C11 §7.22.3.3
   if (!STR_ISINVALID(*self)) free(self->data);
+  //if (self->data != (char *)0xDEADBEEF) free(self->data);
   self->data = NULL; self->count = 0; self->capacity = 0;
 }
 
