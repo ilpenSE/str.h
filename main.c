@@ -55,4 +55,12 @@ int main(void) {
   }
   printf("------------------------------\n");
 
+  {
+    StringView sv = SVL("selam aga");
+    StringView subsv = sv_subsv(sv, 3, 6); // 'am '
+    printf("sv = '"SV_FMT"'\n", SV_ARG(sv));
+    printf("subsv = '"SV_FMT"'\n", SV_ARG(subsv));
+  }
+  printf("------------------------------\n");
+
 }

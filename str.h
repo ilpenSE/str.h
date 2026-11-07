@@ -36,9 +36,9 @@ typedef struct StringBounds {
 #endif
 
 // Do not use these macros directly.
-#define SV_impl(buf, size) (StringView){buf, size}
-#define SV1(buf)        SV_impl((buf), strlen(buf))
-#define SV2(buf, size)  SV_impl((buf), (size))
+#define _SV_impl(buf, size) (StringView){buf, size}
+#define _SV1(buf)           _SV_impl((buf), strlen(buf))
+#define _SV2(buf, size)     _SV_impl((buf), (size))
 #define _SV_GET_MACRO(_1, _2, NAME, ...) NAME
 
 /*
@@ -47,7 +47,7 @@ typedef struct StringBounds {
   If you don't provide any size, it automatically calls strlen to get size
   Use SVL(literal) for creating string view from string literals.
 */
-#define SV(...) _SV_GET_MACRO(__VA_ARGS__, SV2, SV1)(__VA_ARGS__)
+#define SV(...) _SV_GET_MACRO(__VA_ARGS__, _SV2, _SV1)(__VA_ARGS__)
 #define SVS(str) SV(str.data, str.count)
 #define SVL(str_lit) (StringView){str_lit, sizeof(str_lit)-1}
 
@@ -81,9 +81,17 @@ STRDEF bool str_reserve(String *self, size_t extra);
 STRDEF bool str_append(String *self, char c);
 STRDEF bool str_concat(String *self, StringView sv);
 STRDEF void str_free(String *self);
+STRDEF char str_at(const String *self, size_t idx);
+STRDEF int str_cmp(const String *lhs, const String *rhs);
+STRDEF bool str_eq(const String *lhs, const String *rhs);
+// [start, end)
+STRDEF String str_substr(const String *self, size_t start, size_t end);
 
 // String view functions
-STRDEF StringView sv_substr(String str, size_t start, size_t end);
+// [start, end)
+STRDEF StringView sv_subsv(StringView sv, size_t start, size_t end);
+// [start, end)
+STRDEF StringView sv_substr(const String *str, size_t start, size_t end);
 
 STRDEF StringView sv_chop_left(StringView self, size_t count);
 #define sv_remove_prefix sv_chop_left
@@ -104,8 +112,8 @@ STRDEF void sv_trim(StringView *self);
 
 /* If the functions that returns String or StringView
    has returned one of these, it means there's an error. */
-static const String STR_INVALID = {.data=(char*)0xCCCCCCCC};
-static const StringView SV_INVALID = {.data=(const char*)0xCCCCCCCC};
+static const String STR_INVALID = {.data=(char*)0xDEADBEEF};
+static const StringView SV_INVALID = {.data=(const char*)0xDEADBEEF};
 
 // You can check errors with these helper macros
 #define STR_ISINVALID(str) (str.data == STR_INVALID.data)
@@ -155,6 +163,7 @@ bool str_append(String *self, char c)
 {
   if (!str_reserve(self, 1)) return false;
   self->data[self->count++] = c;
+  self->data[self->count] = '\0';
   return true;
 }
 
@@ -175,12 +184,52 @@ void str_free(String *self)
   *self = (String){0};
 }
 
-StringView sv_substr(String str, size_t start, size_t end)
+char str_at(const String *self, size_t idx)
+{
+  if (idx >= self->count) return '\0';
+  return self->data[idx];
+}
+
+int str_cmp(const String *lhs, const String *rhs)
+{
+  if (lhs->count != rhs->count) return lhs->count - rhs->count;
+  return memcmp(lhs->data, rhs->data, lhs->count);
+}
+
+bool str_eq(const String *lhs, const String *rhs)
+{
+  return str_cmp(lhs, rhs) == 0;
+}
+
+String str_substr(const String *self, size_t start, size_t end)
 {
   if (start > end ||
-      start > str.count ||
-      end > str.count) return SV_INVALID;
-  return (StringView){str.data + start, end - start};
+      start > self->count ||
+      end > self->count) return STR_INVALID;
+  size_t count = end - start;
+  String res = str_new(count + 1);
+
+  memcpy(res.data, self->data + start, count);
+  res.data[res.count] = '\0';
+  return res;
+}
+
+// String View functions implementations
+
+StringView sv_subsv(StringView sv, size_t start, size_t end)
+{
+  if (start > end ||
+      start > sv.count ||
+      end > sv.count) return SV_INVALID;
+  return (StringView){sv.data + start, end - start};
+}
+
+StringView sv_substr(const String *str, size_t start, size_t end)
+{
+  if (start > end ||
+      start > str->count ||
+      end > str->count) return SV_INVALID;
+  return (StringView){str->data + start, end - start};
 }
 
 StringView sv_chop_left(StringView self, size_t count)
