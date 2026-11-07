@@ -8,6 +8,15 @@
   - Tested in x86-64 GNU/Linux machine with gcc and clang compilers.
   - Code is self-documented. (You can always read implementation or official documentation of that specific function top of its decleration)
 
+  - This header is self-contained, stb-style header:
+  ```c
+  #define STR_IMPLEMENTATION
+  #include "str.h"
+  ```c
+  - Define `STR_IMPLEMENTATION` somewhere ONCE! Or you get linker errors of multiple definitions
+  - And do NOT define it through command line (-DSTR_IMPLEMENTATION) if you have multiple translation units in that command line.
+    Because it usually means define this macro in ALL translation units. And you can violate One-Definition-Rule (ODR)
+
   The MIT License
   Copyright (c) 2026 ilpeN
 
