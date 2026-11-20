@@ -63,4 +63,13 @@ int main(void) {
   }
   printf("------------------------------\n");
 
+  {
+    String str = STR("selam aga");
+    StringView sub = str_subsv(&str, 2, 6); // 'lam '
+    printf("str = '"STR_FMT"'\n", STR_ARG(str));
+    printf("subsv = '"SV_FMT"'\n", SV_ARG(sub));
+    str_free(&str);
+  }
+  printf("------------------------------\n");
+
 }

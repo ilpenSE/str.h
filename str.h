@@ -199,6 +199,15 @@ STRDEF bool str_eq(const String *lhs, const String *rhs);
 */
 STRDEF String str_substr(const String *self, size_t start, size_t end);
 
+/*
+  Returns sub-StringView out of String.
+  Returned string view refers/points to `self`.
+  So make sure that `self` is pointing to valid (NOT dangling) buffer.
+  Range: [start, end); start: inclusive, end: exclusive
+  Start and end are indexes to the main string view
+*/
+STRDEF StringView str_subsv(const String *self, size_t start, size_t end);
+
 // String view functions
 
 /*
@@ -395,6 +404,14 @@ String str_substr(const String *self, size_t start, size_t end)
   memcpy(res.data, self->data + start, count);
   res.data[res.count] = '\0';
   return res;
+}
+
+StringView str_subsv(const String *self, size_t start, size_t end)
+{
+  if (start > end ||
+      start > self->count ||
+      end > self->count) return SV_INVALID;
+  return (StringView){self->data + start, end - start};
 }
 
 // String View functions implementations
