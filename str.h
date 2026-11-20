@@ -220,6 +220,12 @@ STRDEF StringView sv_subsv(StringView sv, size_t start, size_t end);
 STRDEF StringView sv_substr(const String *str, size_t start, size_t end);
 
 /*
+  Return character at `idx`.
+  Checks bounds of view, if it's out-of-bounds returns '\0'
+*/
+STRDEF char sv_at(const StringView *self, size_t idx);
+
+/*
   Chops string view `self` from left by amount of `count` parameter.
   Returns chopped part of `self`.
 */
@@ -392,6 +398,11 @@ String str_substr(const String *self, size_t start, size_t end)
 }
 
 // String View functions implementations
+char sv_at(const StringView *self, size_t idx)
+{
+  if (idx >= self->count) return '\0';
+  return self->data[idx];
+}
 
 StringView sv_subsv(StringView sv, size_t start, size_t end)
 {
